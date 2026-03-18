@@ -469,6 +469,7 @@ public class InputControlsView extends View {
                 }
             }
         }
+
     }
 
 

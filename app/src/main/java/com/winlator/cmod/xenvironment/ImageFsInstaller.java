@@ -2,8 +2,6 @@ package com.winlator.cmod.xenvironment;
 
 import android.content.Context;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import com.winlator.cmod.MainActivity;
 import com.winlator.cmod.R;
 import com.winlator.cmod.SettingsFragment;
@@ -16,10 +14,6 @@ import com.winlator.cmod.core.FileUtils;
 import com.winlator.cmod.core.PreloaderDialog;
 import com.winlator.cmod.core.TarCompressorUtils;
 import com.winlator.cmod.core.WineInfo;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -90,6 +84,7 @@ public abstract class ImageFsInstaller {
                 installDriversFromAssets(activity);
                 imageFs.createImgVersionFile(LATEST_VERSION);
                 resetContainerImgVersions(activity);
+                extractPolytoriaClient(activity);
             }
             else AppUtils.showToast(activity, R.string.unable_to_install_system_files);
 
@@ -97,9 +92,43 @@ public abstract class ImageFsInstaller {
         });
     }
 
+    private static void extractPolytoriaClient(Context context) {
+        ImageFs imageFs = ImageFs.find(context);
+        File rootDir = imageFs.getRootDir();
+        File polytoriaDir = new File(rootDir, "home/xuser-1/.wine/drive_c/users/xuser/AppData/Roaming/Polytoria/Client/1.5.6");
+        File marker = new File(polytoriaDir, ".polytoria_installed");
+
+        if (marker.exists()) return;
+
+        polytoriaDir.mkdirs();
+        boolean success = TarCompressorUtils.extract(TarCompressorUtils.Type.XZ, context, "polytoria_client.txz", polytoriaDir);
+        if (success) {
+            try {
+                marker.createNewFile();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public static void installPolytoriaClient(final MainActivity activity) {
+        ImageFs imageFs = ImageFs.find(activity);
+        File rootDir = imageFs.getRootDir();
+        File marker = new File(rootDir, "home/xuser-1/.wine/drive_c/users/xuser/AppData/Roaming/Polytoria/Client/1.5.6/.polytoria_installed");
+        if (marker.exists()) return;
+
+        final PreloaderDialog dialog = activity.preloaderDialog;
+        dialog.show(R.string.installing_system_files);
+        Executors.newSingleThreadExecutor().execute(() -> {
+            extractPolytoriaClient(activity);
+            dialog.closeOnUiThread();
+        });
+    }
+
     public static void installIfNeeded(final MainActivity activity) {
         ImageFs imageFs = ImageFs.find(activity);
         if (!imageFs.isValid() || imageFs.getVersion() < LATEST_VERSION) installFromAssets(activity);
+        else installPolytoriaClient(activity);
     }
 
     private static void clearOptDir(File optDir) {

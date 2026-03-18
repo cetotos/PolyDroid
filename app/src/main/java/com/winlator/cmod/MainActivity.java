@@ -20,6 +20,11 @@ import android.text.style.ForegroundColorSpan;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.webkit.CookieManager;
+import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.TextView;
 
 import androidx.annotation.IntRange;
@@ -43,9 +48,12 @@ import com.winlator.cmod.core.ImageUtils;
 import com.winlator.cmod.core.PreloaderDialog;
 import com.winlator.cmod.container.ContainerManager;
 import com.winlator.cmod.core.WineThemeManager;
+import com.winlator.cmod.xenvironment.ImageFs;
 import com.winlator.cmod.xenvironment.ImageFsInstaller;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -56,6 +64,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public static final byte OPEN_DIRECTORY_REQUEST_CODE = 4;
     public static final byte OPEN_IMAGE_REQUEST_CODE = 5;
     private DrawerLayout drawerLayout;
+    private WebView webViewOverlay;
     public final PreloaderDialog preloaderDialog = new PreloaderDialog(this);
     private boolean editInputControls = false;
     private int selectedProfileId;
@@ -94,6 +103,46 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         setContentView(R.layout.main_activity);
 
+        // cookies so you dont have to keep logging in
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.setAcceptCookie(true);
+        cookieManager.setAcceptThirdPartyCookies(findViewById(R.id.WebViewOverlay), true);
+
+        webViewOverlay = findViewById(R.id.WebViewOverlay);
+        WebSettings webSettings = webViewOverlay.getSettings();
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setDomStorageEnabled(true);
+        webSettings.setDatabaseEnabled(true);
+        webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        // cloudflare is strict
+        webSettings.setUserAgentString("Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36");
+        webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
+        webSettings.setMediaPlaybackRequiresUserGesture(false);
+        webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        webViewOverlay.setWebChromeClient(new WebChromeClient());
+        webViewOverlay.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, android.webkit.WebResourceRequest request) {
+                String url = request.getUrl().toString();
+                if (url.startsWith("polytoria://")) {
+                    handlePolytoriaUrl(url);
+                    return true;
+                }
+                return false;
+            }
+
+            @SuppressWarnings("deprecation")
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                if (url.startsWith("polytoria://")) {
+                    handlePolytoriaUrl(url);
+                    return true;
+                }
+                return false;
+            }
+        });
+        webViewOverlay.loadUrl("https://polytoria.com");
+
         drawerLayout = findViewById(R.id.DrawerLayout);
         NavigationView navigationView = findViewById(R.id.NavigationView);
         navigationView.setNavigationItemSelectedListener(this);
@@ -116,6 +165,13 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         containerManager = new ContainerManager(this);
 
+        // handle polytoria:// intent
+        Intent incomingIntent = getIntent();
+        if (incomingIntent != null && incomingIntent.getData() != null
+                && "polytoria".equals(incomingIntent.getData().getScheme())) {
+            handlePolytoriaUrl(incomingIntent.getData().toString());
+        }
+
         Intent intent = getIntent();
         editInputControls = intent.getBooleanExtra("edit_input_controls", false);
         if (editInputControls) {
@@ -125,7 +181,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             navigationView.setCheckedItem(R.id.main_menu_input_controls);
         } else {
             int selectedMenuItemId = intent.getIntExtra("selected_menu_item_id", 0);
-            int menuItemId = selectedMenuItemId > 0 ? selectedMenuItemId : R.id.main_menu_containers;
+            int menuItemId = selectedMenuItemId > 0 ? selectedMenuItemId : R.id.main_menu_shortcuts;
 
             actionBar.setHomeAsUpIndicator(R.drawable.icon_action_bar_menu);
             onNavigationItemSelected(navigationView.getMenu().findItem(menuItemId));
@@ -169,6 +225,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
             else finish();
         }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        CookieManager.getInstance().flush();
     }
 
     @Override
@@ -240,21 +302,27 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         switch (item.getItemId()) {
             case R.id.main_menu_shortcuts:
+                webViewOverlay.setVisibility(View.VISIBLE);
                 show(new ShortcutsFragment(), false);  // Forward animation
                 break;
             case R.id.main_menu_containers:
+                webViewOverlay.setVisibility(View.GONE);
                 show(new ContainersFragment(), false);  // Forward animation
                 break;
             case R.id.main_menu_input_controls:
+                webViewOverlay.setVisibility(View.GONE);
                 show(new InputControlsFragment(selectedProfileId), false);  // Forward animation
                 break;
             case R.id.main_menu_contents:
+                webViewOverlay.setVisibility(View.GONE);
                 show(new ContentsFragment(), false);  // Forward animation
                 break;
             case R.id.main_menu_adrenotools_gpu_drivers:
+                webViewOverlay.setVisibility(View.GONE);
                 show(new AdrenotoolsFragment(), false);
                 break;
             case R.id.main_menu_settings:
+                webViewOverlay.setVisibility(View.GONE);
                 show(new SettingsFragment(), false);  // Forward animation
                 break;
             case R.id.main_menu_about:
@@ -342,6 +410,56 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
 
         dialog.show();
+    }
+
+    private void handlePolytoriaUrl(String url) {
+        // URL format: polytoria://[type]/[token]/[optional map for creator i think]
+        String stripped = url.replace("polytoria://", "");
+        String[] parts = stripped.split("/");
+        String type = parts.length > 0 ? parts[0] : null;
+        String token = parts.length > 1 ? parts[1] : null;
+
+        if (type == null || token == null) {
+            Log.e("MainActivity", "Invalid polytoria:// URL: " + url);
+            return;
+        }
+
+
+        String execArgs;
+        if (type.equals("test") || type.equals("testbeta")) {
+            // solo mode if you use creator for some reason
+            String map = parts.length > 2 ? parts[2] : "";
+            execArgs = "-solo " + map;
+        } else {
+            execArgs = "-network client -token " + token;
+        }
+        // force fullscreen (this is only if your phone is 19.5:9 lol)
+        execArgs += " -screen-fullscreen 1 -screen-width 2340 -screen-height 1080";
+        String screenSize = "2340x1080";
+
+        File cacheDir = getCacheDir();
+        File desktopFile = new File(cacheDir, "polytoria_launch.desktop");
+        try (FileWriter writer = new FileWriter(desktopFile)) {
+            writer.write("[Desktop Entry]\n");
+            writer.write("Type=Application\n");
+            writer.write("Name=Polytoria Client\n");
+            writer.write("Exec=wine C:/users/xuser/AppData/Roaming/Polytoria/Client/1.5.6/Polytoria\\ Client.exe\n");
+            writer.write("\n");
+            writer.write("[Extra Data]\n");
+            writer.write("execArgs=" + execArgs + "\n");
+            writer.write("screenSize=" + screenSize + "\n");
+            writer.write("simTouchScreen=1\n");
+        } catch (IOException e) {
+            Log.e("MainActivity", "Failed to create polytoria shortcut", e);
+            return;
+        }
+
+        // launch XServerDisplayActivity with container 1 which should be Polytoria
+        Intent launchIntent = new Intent(this, XServerDisplayActivity.class);
+        launchIntent.putExtra("container_id", 1);
+        launchIntent.putExtra("shortcut_path", desktopFile.getPath());
+        launchIntent.putExtra("shortcut_name", "Polytoria Client");
+        startActivity(launchIntent);
     }
 
     private void setNavigationViewItemTextColor(NavigationView navigationView, int color) {
