@@ -12,8 +12,13 @@ PolyDroid is an Android application that lets you to run the Windows version of 
 1. Download and install the APK from[GitHub Releases](https://github.com/cetotos/PolyDroid/releases/latest)
 2. Launch the app, give permissions and wait for the installation process to finish
 
+## Moderation concerns
 
-# Credits and Third-party apps
+Unlike PolytoriaVR, this won't get you banned as it doesn't have any blatant cheats like PolytoriaVR (flying, noclip, size changes etc.)
+However, the game still modifies the client for controller support, which shouldn't be an issue but I can't exactly confirm...
+
+
+## Credits and Third-party apps
 - Winlator-CMOD ([github.com/Stredohori/Winlator-CMOD](https://github.com/Stredohori/Winlator-CMOD))
 - FEXCore ([github.com/FEX-Emu/FEX](https://github.com/FEX-Emu/FEX))
 - Ubuntu RootFs ([Focal Fossa](https://releases.ubuntu.com/focal))
