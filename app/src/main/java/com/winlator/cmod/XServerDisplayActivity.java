@@ -526,7 +526,7 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
                     preloaderDialog.closeOnUiThread();
                     winStarted[0] = true;
                 }
-                    
+
                 if (frameRatingWindowId == window.id) frameRating.update();
             }
            
@@ -748,10 +748,10 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
         if (environment != null) {
             xServerView.onResume();
             environment.onResume();
+            ProcessHelper.resumeAllWineProcesses();
         }
         startTime = System.currentTimeMillis();
         handler.postDelayed(savePlaytimeRunnable, SAVE_INTERVAL_MS);
-        ProcessHelper.resumeAllWineProcesses();
     }
 
     @Override
@@ -770,12 +770,12 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
             if (environment != null) {
                 environment.onPause();
                 xServerView.onPause();
+                ProcessHelper.pauseAllWineProcesses();
             }
         }
 
         savePlaytimeData();
         handler.removeCallbacks(savePlaytimeRunnable);
-        ProcessHelper.pauseAllWineProcesses();
     }
 
 
@@ -979,7 +979,72 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
             Log.d("XServerDisplayActivity", "Failed to extract input dlls");
     }
 
+    private File getContainerWineDir() {
+        return new File(container.getRootDir(), ".wine");
+    }
+
+    private static boolean shouldSkipDll(String name) {
+        return name.equals("icu.dll") || name.equals("tabtip.exe");
+    }
+
+    private void ensureCoreDlls() {
+        File wineDir = getContainerWineDir();
+        File system32Dir = new File(wineDir, "drive_c/windows/system32");
+        File syswow64Dir = new File(wineDir, "drive_c/windows/syswow64");
+
+        if (new File(system32Dir, "kernel32.dll").exists()) {
+            return;
+        }
+
+        Log.d("XServerDisplayActivity", "Wine DLLs missing, copying from Wine Binary");
+        system32Dir.mkdirs();
+        syswow64Dir.mkdirs();
+
+        String system32Src = wineInfo.isArm64EC() ? "aarch64-windows" : "x86_64-windows";
+        File srcSystem32 = new File(imageFs.getWinePath() + "/lib/wine/" + system32Src);
+        File srcSyswow64 = new File(imageFs.getWinePath() + "/lib/wine/i386-windows");
+
+        if (srcSystem32.isDirectory()) {
+            File[] files = srcSystem32.listFiles(File::isFile);
+            if (files != null) {
+                for (File file : files) {
+                    if (shouldSkipDll(file.getName())) continue;
+                    File dst = new File(system32Dir, file.getName());
+                    if (!dst.exists()) FileUtils.copy(file, dst);
+                }
+            }
+        }
+
+        if (srcSyswow64.isDirectory()) {
+            File[] files = srcSyswow64.listFiles(File::isFile);
+            if (files != null) {
+                for (File file : files) {
+                    if (shouldSkipDll(file.getName())) continue;
+                    File dst = new File(syswow64Dir, file.getName());
+                    if (!dst.exists()) FileUtils.copy(file, dst);
+                }
+            }
+        }
+
+        // delete icu.dll if it was previously copied (causes forwarding errors)
+        File icuSystem32 = new File(system32Dir, "icu.dll");
+        File icuSyswow64 = new File(syswow64Dir, "icu.dll");
+        if (icuSystem32.exists()) icuSystem32.delete();
+        if (icuSyswow64.exists()) icuSyswow64.delete();
+    }
+
     private void setupWineSystemFiles() {
+        ensureCoreDlls();
+
+        // force re-extraction on first run with per-container WINEPREFIX
+        if (!"1".equals(container.getExtra("perContainerPrefix"))) {
+            container.putExtra("dxwrapper", null);
+            container.putExtra("wincomponents", null);
+            container.putExtra("appVersion", null);
+            container.putExtra("perContainerPrefix", "1");
+            container.saveData();
+        }
+
         String appVersion = String.valueOf(AppUtils.getVersionCode(this));
         String imgVersion = String.valueOf(imageFs.getVersion());
         boolean containerDataChanged = false;
@@ -1015,7 +1080,7 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
 
         String desktopTheme = container.getDesktopTheme();
         if (!(desktopTheme+","+xServer.screenInfo).equals(container.getExtra("desktopTheme"))) {
-            WineThemeManager.apply(this, new WineThemeManager.ThemeInfo(desktopTheme), xServer.screenInfo);
+            WineThemeManager.apply(this, container.getRootDir(), new WineThemeManager.ThemeInfo(desktopTheme), xServer.screenInfo);
             container.putExtra("desktopTheme", desktopTheme+","+xServer.screenInfo);
             containerDataChanged = true;
         }
@@ -1043,7 +1108,7 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
 
         // Set environment variables
         envVars.put("LC_ALL", lc_all);
-        envVars.put("WINEPREFIX", imageFs.wineprefix);
+        envVars.put("WINEPREFIX", getContainerWineDir().getPath());
 
         boolean enableWineDebug = preferences.getBoolean("enable_wine_debug", false);
         String wineDebugChannels = preferences.getString("wine_debug_channels", SettingsFragment.DEFAULT_WINE_DEBUG_CHANNELS);
@@ -1390,30 +1455,40 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
     }
 
     private void simulateConfirmInputControlsDialog() {
-        // Simulate setting the relative mouse movement and touchscreen controls from preferences
 
-        boolean isShowTouchscreenControls = preferences.getBoolean("show_touchscreen_controls_enabled", false); // default is false (hidden)
+        boolean isShowTouchscreenControls = preferences.getBoolean("show_touchscreen_controls_enabled", true); // default is true (visible)
         inputControlsView.setShowTouchscreenControls(isShowTouchscreenControls);
 
         boolean isTimeoutEnabled = preferences.getBoolean("touchscreen_timeout_enabled", false);
         boolean isHapticsEnabled = preferences.getBoolean("touchscreen_haptics_enabled", false);
 
-        // Apply these settings as if the user confirmed the dialog
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean("touchscreen_timeout_enabled", isTimeoutEnabled);
         editor.putBoolean("touchscreen_haptics_enabled", isHapticsEnabled);
         editor.apply();
 
-        // If no profile is selected, hide the controls
-        int selectedProfileIndex = preferences.getInt("selected_profile_index", -1); // Default to -1 for no profile
+        // If no profile is selected, default to Virtual Gamepad
+        int selectedProfileIndex = preferences.getInt("selected_profile_index", -1);
 
         if (selectedProfileIndex >= 0 && selectedProfileIndex < inputControlsManager.getProfiles().size()) {
             // A profile is selected, show the controls
             ControlsProfile profile = inputControlsManager.getProfiles().get(selectedProfileIndex);
             showInputControls(profile);
         } else {
-            // No profile selected, ensure the controls are hidden
-            hideInputControls();
+            // No profile explicitly selected, default to Virtual Gamepad
+            ControlsProfile defaultProfile = null;
+            ArrayList<ControlsProfile> profiles = inputControlsManager.getProfiles();
+            for (ControlsProfile p : profiles) {
+                if ("Virtual Gamepad".equals(p.getName())) {
+                    defaultProfile = p;
+                    break;
+                }
+            }
+            if (defaultProfile != null) {
+                showInputControls(defaultProfile);
+            } else {
+                hideInputControls();
+            }
         }
 
         // Timeout logic should only apply if the controls are visible
@@ -1491,8 +1566,6 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
     private void extractGraphicsDriverFiles() {
         String adrenoToolsDriverId = graphicsDriverConfig.get("version");
 
-        Log.d("GraphicsDriverExtraction", "Adrenotools DriverID: " + adrenoToolsDriverId);
-
         File rootDir = imageFs.getRootDir();
 
         if (dxwrapper.contains("dxvk")) {
@@ -1516,7 +1589,6 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
         envVars.put("GALLIUM_DRIVER", "zink");
 
         if (firstTimeBoot) {
-            Log.d("XServerDisplayActivity", "First time container boot, re-extracting libs");
             TarCompressorUtils.extract(TarCompressorUtils.Type.ZSTD, this, "graphics_driver/wrapper" + ".tzst", rootDir);
             TarCompressorUtils.extract(TarCompressorUtils.Type.ZSTD, this, "layers" + ".tzst", rootDir);
             TarCompressorUtils.extract(TarCompressorUtils.Type.ZSTD, this, "graphics_driver/extra_libs" + ".tzst", rootDir);
@@ -1592,6 +1664,7 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
             envVars.put("ENABLE_VKBASALT", "1");
             envVars.put("VKBASALT_CONFIG", vkbasaltConfig);
         }
+
     }
 
     @Override
@@ -1653,8 +1726,7 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
     private void extractDXWrapperFiles(String dxwrapper) {
         final String[] dlls = {"d3d10.dll", "d3d10_1.dll", "d3d10core.dll", "d3d11.dll", "d3d12.dll", "d3d12core.dll", "d3d8.dll", "d3d9.dll", "dxgi.dll", "ddraw.dll", "d3dimm.dll"};
 
-        File rootDir = imageFs.getRootDir();
-        File windowsDir = new File(rootDir, ImageFs.WINEPREFIX + "/drive_c/windows");
+        File windowsDir = new File(getContainerWineDir(), "drive_c/windows");
 
         if (dxwrapper.contains("dxvk")) {
             Log.d(TAG, "Extracting DXVK wrapper files, version: " + dxwrapper);
@@ -1759,9 +1831,9 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
     
     private void extractWinComponentFiles() {
         Log.d("XServerDisplayActivity", "Extracting WinComponents");
-        File rootDir = imageFs.getRootDir();
-        File windowsDir = new File(rootDir, ImageFs.WINEPREFIX+"/drive_c/windows");
-        File systemRegFile = new File(rootDir, ImageFs.WINEPREFIX+"/system.reg");
+        File wineDir = getContainerWineDir();
+        File windowsDir = new File(wineDir, "drive_c/windows");
+        File systemRegFile = new File(wineDir, "system.reg");
 
         try {
             JSONObject wincomponentsJSONObject = new JSONObject(FileUtils.readString(this, "wincomponents/wincomponents.json"));
@@ -1796,8 +1868,7 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
     }
 
     private void restoreOriginalDllFiles(final String... dlls) {
-        File rootDir = imageFs.getRootDir();
-        File windowsDir = new File(rootDir, ImageFs.WINEPREFIX+"/drive_c/windows");
+        File windowsDir = new File(getContainerWineDir(), "drive_c/windows");
         File system32dlls = null;
         File syswow64dlls = null;
 
@@ -1901,8 +1972,7 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
 
     private void changeWineAudioDriver() {
         if (!audioDriver.equals(container.getExtra("audioDriver"))) {
-            File rootDir = imageFs.getRootDir();
-            File userRegFile = new File(rootDir, ImageFs.WINEPREFIX+"/user.reg");
+            File userRegFile = new File(getContainerWineDir(), "user.reg");
             try (WineRegistryEditor registryEditor = new WineRegistryEditor(userRegFile)) {
                 if (audioDriver.equals("alsa")) {
                     registryEditor.setStringValue("Software\\Wine\\Drivers", "Audio", "alsa");
@@ -1918,9 +1988,18 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
 
     private void applyGeneralPatches(Container container) {
         File rootDir = imageFs.getRootDir();
-        TarCompressorUtils.extract(TarCompressorUtils.Type.ZSTD, this, "container_pattern_common.tzst", rootDir);
+        String sharedWinePrefix = rootDir.getPath() + "/" + ImageFs.WINEPREFIX;
+        File containerWineDir = getContainerWineDir();
+
+        TarCompressorUtils.extract(TarCompressorUtils.Type.ZSTD, this, "container_pattern_common.tzst", rootDir, (file, size) -> {
+            String path = file.getPath();
+            if (path.startsWith(sharedWinePrefix)) {
+                return new File(containerWineDir, path.substring(sharedWinePrefix.length()));
+            }
+            return file;
+        });
         TarCompressorUtils.extract(TarCompressorUtils.Type.ZSTD, this, "pulseaudio.tzst", new File(getFilesDir(), "pulseaudio"));
-        WineUtils.applySystemTweaks(this, wineInfo);
+        WineUtils.applySystemTweaks(this, container, wineInfo);
         container.putExtra("graphicsDriver", null);
         container.putExtra("desktopTheme", null);
     }

@@ -55,27 +55,30 @@ public class ContainerManager {
         containers.clear();
         maxContainerId = 0;
 
-        try {
-            File[] files = homeDir.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    if (file.isDirectory()) {
-                        if (file.getName().startsWith(ImageFs.USER + "-")) {
-                            Container container = new Container(
-                                    Integer.parseInt(file.getName().replace(ImageFs.USER + "-", "")), this
-                            );
+        File[] files = homeDir.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory() && file.getName().startsWith(ImageFs.USER + "-")) {
+                    try {
+                        Container container = new Container(
+                                Integer.parseInt(file.getName().replace(ImageFs.USER + "-", "")), this
+                        );
 
-                            container.setRootDir(new File(homeDir, ImageFs.USER + "-" + container.id));
-                            JSONObject data = new JSONObject(FileUtils.readString(container.getConfigFile()));
-                            container.loadData(data);
-                            containers.add(container);
-                            maxContainerId = Math.max(maxContainerId, container.id);
+                        container.setRootDir(new File(homeDir, ImageFs.USER + "-" + container.id));
+                        String configStr = FileUtils.readString(container.getConfigFile());
+                        if (configStr == null) {
+                            Log.w("ContainerManager", "Missing config for container: " + file.getName());
+                            continue;
                         }
+                        JSONObject data = new JSONObject(configStr);
+                        container.loadData(data);
+                        containers.add(container);
+                        maxContainerId = Math.max(maxContainerId, container.id);
+                    } catch (JSONException | NumberFormatException e) {
+                        Log.e("ContainerManager", "Error loading container: " + file.getName(), e);
                     }
                 }
             }
-        } catch (JSONException | NullPointerException e) {
-            Log.e("ContainerManager", "Error loading containers", e);
         }
     }
 
@@ -119,10 +122,14 @@ public class ContainerManager {
     private Container createContainer(JSONObject data, ContentsManager contentsManager) {
         try {
             int id = maxContainerId + 1;
-            data.put("id", id);
 
             File containerDir = new File(homeDir, ImageFs.USER+"-"+id);
+            while (containerDir.exists()) {
+                id++;
+                containerDir = new File(homeDir, ImageFs.USER+"-"+id);
+            }
             if (!containerDir.mkdirs()) return null;
+            data.put("id", id);
 
             Container container = new Container(id, this);
             container.setRootDir(containerDir);

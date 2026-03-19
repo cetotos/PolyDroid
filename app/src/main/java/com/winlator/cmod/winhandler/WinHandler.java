@@ -462,7 +462,7 @@ public class WinHandler {
                     sendData.put(RequestCodes.GET_GAMEPAD);
 
                     if (enabled) {
-                        sendData.putInt(!useVirtualGamepad ? currentController.getDeviceId() : profile.id);
+                        sendData.putInt(useVirtualGamepad ? profile.id : currentController.getDeviceId());
 
                         if (useLegacyInputMethod) {
                             // Use legacy DInput mapper type
@@ -579,12 +579,30 @@ public class WinHandler {
                 sendData.put((byte)(enabled ? 1 : 0));
 
                 if (enabled) {
-                    sendData.putInt(!useVirtualGamepad ? currentController.getDeviceId() : profile.id);
+                    sendData.putInt(useVirtualGamepad ? profile.id : currentController.getDeviceId());
                     GamepadState state = useVirtualGamepad ? profile.getGamepadState() : currentController.state;
 
-                    // Combine gyro input with thumbstick input
-                    state.thumbRX = Mathf.clamp(state.thumbRX + gyroX, -1.0f, 1.0f); // Apply clamping
-                    state.thumbRY = Mathf.clamp(state.thumbRY + gyroY, -1.0f, 1.0f); // Apply clamping
+                    // merge physical controller input when virtual gamepad is active
+                    // this is really broken and glitchy
+                    if (useVirtualGamepad && currentController != null) {
+                        GamepadState ctrlState = currentController.state;
+                        if (Math.abs(ctrlState.thumbLX) > Math.abs(state.thumbLX)) state.thumbLX = ctrlState.thumbLX;
+                        if (Math.abs(ctrlState.thumbLY) > Math.abs(state.thumbLY)) state.thumbLY = ctrlState.thumbLY;
+                        if (Math.abs(ctrlState.thumbRX) > Math.abs(state.thumbRX)) state.thumbRX = ctrlState.thumbRX;
+                        if (Math.abs(ctrlState.thumbRY) > Math.abs(state.thumbRY)) state.thumbRY = ctrlState.thumbRY;
+                        if (ctrlState.triggerL > state.triggerL) state.triggerL = ctrlState.triggerL;
+                        if (ctrlState.triggerR > state.triggerR) state.triggerR = ctrlState.triggerR;
+                        state.buttons |= ctrlState.buttons;
+                        for (int i = 0; i < 4; i++) state.dpad[i] |= ctrlState.dpad[i];
+                    }
+                    state.thumbRX = Mathf.clamp(state.thumbRX + gyroX, -1.0f, 1.0f);
+                    state.thumbRY = Mathf.clamp(state.thumbRY + gyroY, -1.0f, 1.0f);
+
+                    if (state.thumbRX != 0 || state.thumbRY != 0) {
+                        Log.d("WinHandler", "Sending gamepad: RX=" + state.thumbRX + " RY=" + state.thumbRY +
+                              " LX=" + state.thumbLX + " LY=" + state.thumbLY +
+                              " vgp=" + useVirtualGamepad + " ctrl=" + (currentController != null));
+                    }
 
                     state.writeTo(sendData);
                 }

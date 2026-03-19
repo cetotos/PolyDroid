@@ -122,10 +122,15 @@ android {
     compileSdk 34
     buildToolsVersion "35.0.0"
 
+    lint {
+        // targetSdkVersion 28 is intentional or it wont build
+        disable 'ExpiredTargetSdkVersion'
+    }
+
     defaultConfig {
         applicationId "com.winlator.cmod"
         minSdkVersion 26
-        // We’re preserving Winlator’s request to keep targetSdkVersion at 28
+        // We're preserving Winlator's request to keep targetSdkVersion at 28
         targetSdkVersion 28
 
         versionCode 20
@@ -152,21 +157,35 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    // Keep Winlator’s buildTypes
-    buildTypes {
-        debug {
-            minifyEnabled false
-        }
-        // If you have a release build type, add it here
+    def keystorePropertiesFile = rootProject.file("app/keystore.properties")
+    def keystoreProperties = new Properties()
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
     }
 
     signingConfigs {
-        debug {
-            storeFile file('testkey_untrusted.jks')
-            keyAlias 'alias'
-            storePassword 'xrj45yWGLbsO7W0v'
-            keyPassword 'xrj45yWGLbsO7W0v'
+        release {
+            if (keystoreProperties['storeFile'] != null) {
+                storeFile file(keystoreProperties['storeFile'])
+                keyAlias keystoreProperties['keyAlias']
+                storePassword keystoreProperties['storePassword']
+                keyPassword keystoreProperties['keyPassword']
+            }
         }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            profileable false
+        }
+        debug {
+            minifyEnabled false
+        }
+    }
+
+    installation {
+        installOptions '-t'
     }
 
     ndkVersion '29.0.14206865'
@@ -186,7 +205,7 @@ android {
 }
 
 dependencies {
-    // Winlator’s dependencies
+    // Winlator's dependencies
     implementation 'androidx.appcompat:appcompat:1.4.0'
     implementation 'androidx.preference:preference:1.2.1'
     implementation 'com.google.android.material:material:1.4.0'

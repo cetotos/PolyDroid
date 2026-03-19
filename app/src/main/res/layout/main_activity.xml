@@ -20,13 +20,25 @@
             app:layout_scrollFlags="enterAlways|scroll"
             app:title="@string/app_name"
             app:titleTextColor="#ffffff"
-            app:titleTextAppearance="@style/TextAppearance.AppCompat.Medium" />
+            app:titleTextAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:visibility="gone" />
 
         <FrameLayout
-            android:id="@+id/FLFragmentContainer"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
+            android:layout_height="match_parent">
+
+            <FrameLayout
+                android:id="@+id/FLFragmentContainer"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
+
+            <WebView
+                android:id="@+id/WebViewOverlay"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone" />
+        </FrameLayout>
     </LinearLayout>
 
     <com.google.android.material.navigation.NavigationView
@@ -38,9 +50,4 @@
         app:headerLayout="@layout/main_menu_header"
         app:itemIconTint="@color/colorAccent"
         app:menu="@menu/main_menu"/>
-
-    <WebView
-        android:id="@+id/WebViewOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
 </androidx.drawerlayout.widget.DrawerLayout>

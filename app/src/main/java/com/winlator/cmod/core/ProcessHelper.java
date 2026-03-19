@@ -89,12 +89,10 @@ public abstract class ProcessHelper {
             ProcessBuilder pb = new ProcessBuilder(splitCommand);
             pb.directory(workingDir);
             pb.environment().putAll(EnvironmentManager.getEnvVars());
-            if (debugCallbacks.isEmpty()) {
-                File null_file = new File("/dev/null");
-                pb.redirectError(null_file);
-                pb.redirectOutput(null_file);
-            }
+            pb.redirectErrorStream(true);
             java.lang.Process process = pb.start();
+
+            createDebugThread(process.getInputStream(), "ProcessOutput");
 
             // Accessing hidden field
             Log.d("ProcessHelper", "Accessing hidden field to get PID");
@@ -103,11 +101,6 @@ public abstract class ProcessHelper {
             pid = pidField.getInt(process);
             pidField.setAccessible(false);
             Log.d("ProcessHelper", "Process started with pid: " + pid);
-
-            if (!debugCallbacks.isEmpty()) {
-                createDebugThread(process.getInputStream());
-                createDebugThread(process.getErrorStream());
-            }
 
             if (terminationCallback != null) createWaitForThread(process, terminationCallback);
 
@@ -119,10 +112,15 @@ public abstract class ProcessHelper {
     }
 
     private static void createDebugThread(final InputStream inputStream) {
+        createDebugThread(inputStream, "ProcessDebug");
+    }
+
+    private static void createDebugThread(final InputStream inputStream, final String tag) {
         Executors.newSingleThreadExecutor().execute(() -> {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
+                    Log.w(tag, line);
                     if (PRINT_DEBUG) System.out.println(line);
                     synchronized (debugCallbacks) {
                         if (!debugCallbacks.isEmpty()) {
@@ -132,7 +130,7 @@ public abstract class ProcessHelper {
                 }
             }
             catch (IOException e) {
-                Log.e("ProcessHelper", "Error in debug thread", e);
+                Log.e(tag, "Error in debug thread", e);
             }
         });
     }
@@ -143,6 +141,7 @@ public abstract class ProcessHelper {
             public void run() {
                 try {
                     int status = process.waitFor();
+                    Log.w("ProcessHelper", "Process exited with status: " + status);
                     terminationCallback.call(status);
                 }
                 catch (InterruptedException e) {

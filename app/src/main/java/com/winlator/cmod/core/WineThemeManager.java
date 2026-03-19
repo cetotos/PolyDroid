@@ -40,9 +40,8 @@ public abstract class WineThemeManager {
         }
     }
 
-    public static void apply(Context context, ThemeInfo themeInfo, ScreenInfo screenInfo) {
-        File rootDir = ImageFs.find(context).getRootDir();
-        File userRegFile = new File(rootDir, ImageFs.WINEPREFIX+"/user.reg");
+    public static void apply(Context context, File containerRootDir, ThemeInfo themeInfo, ScreenInfo screenInfo) {
+        File userRegFile = new File(containerRootDir, ".wine/user.reg");
         String background = Color.red(themeInfo.backgroundColor)+" "+Color.green(themeInfo.backgroundColor)+" "+Color.blue(themeInfo.backgroundColor);
 
         if (themeInfo.backgroundType == BackgroundType.IMAGE) createWallpaperBMPFile(context, screenInfo);

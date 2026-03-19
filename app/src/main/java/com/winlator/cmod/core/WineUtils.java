@@ -43,10 +43,10 @@ public abstract class WineUtils {
         registryEditor.setHexValue("Control Panel\\Desktop\\WindowMetrics", "StatusFont", fontNormalData);
     }
 
-    public static void applySystemTweaks(Context context, WineInfo wineInfo) {
-        File rootDir = ImageFs.find(context).getRootDir();
-        File systemRegFile = new File(rootDir, ImageFs.WINEPREFIX+"/system.reg");
-        File userRegFile = new File(rootDir, ImageFs.WINEPREFIX+"/user.reg");
+    public static void applySystemTweaks(Context context, Container container, WineInfo wineInfo) {
+        File wineDir = new File(container.getRootDir(), ".wine");
+        File systemRegFile = new File(wineDir, "system.reg");
+        File userRegFile = new File(wineDir, "user.reg");
 
         try (WineRegistryEditor registryEditor = new WineRegistryEditor(systemRegFile)) {
             registryEditor.setStringValue("Software\\Classes\\.reg", null, "REGfile");

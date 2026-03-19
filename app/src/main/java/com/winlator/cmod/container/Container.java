@@ -186,7 +186,11 @@ public class Container {
     }
 
     public byte getControllerMapping(XrControllerMapping input) {
-        return (byte) controllerMapping.charAt(input.ordinal());
+        int index = input.ordinal();
+        if (controllerMapping == null || index >= controllerMapping.length()) {
+            return 0;
+        }
+        return (byte) controllerMapping.charAt(index);
     }
 
     public void setControllerMapping(String controllerMapping) {
@@ -512,7 +516,10 @@ public class Container {
                     setPrimaryController(data.getInt(key));
                     break;
                 case "controllerMapping" :
-                    controllerMapping = data.getString(key);
+                    String mapping = data.getString(key);
+                    if (mapping != null && !mapping.isEmpty()) {
+                        controllerMapping = mapping;
+                    }
                     break;
             }
         }
@@ -554,6 +561,10 @@ public class Container {
                     for (String name : defaultEnvVars) if (!envVars.has(name)) envVars.put(name, defaultEnvVars.get(name));
                     data.put("envVars", envVars.toString());
                 }
+            }
+
+            if (!data.has("controllerMapping") || data.getString("controllerMapping").isEmpty()) {
+                data.put("controllerMapping", new String(new char[XrControllerMapping.values().length]));
             }
 
             KeyValueSet wincomponents1 = new KeyValueSet(DEFAULT_WINCOMPONENTS);

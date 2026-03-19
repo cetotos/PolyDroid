@@ -95,11 +95,17 @@ public class ControlElement {
         setBinding(Binding.NONE);
         scroller = null;
 
-        if (type == Type.D_PAD || type == Type.STICK) {
+        if (type == Type.D_PAD) {
             bindings[0] = Binding.KEY_W;
             bindings[1] = Binding.KEY_D;
             bindings[2] = Binding.KEY_S;
             bindings[3] = Binding.KEY_A;
+        }
+        else if (type == Type.STICK) {
+            bindings[0] = Binding.GAMEPAD_LEFT_THUMB_UP;
+            bindings[1] = Binding.GAMEPAD_LEFT_THUMB_RIGHT;
+            bindings[2] = Binding.GAMEPAD_LEFT_THUMB_DOWN;
+            bindings[3] = Binding.GAMEPAD_LEFT_THUMB_LEFT;
         }
         else if (type == Type.TRACKPAD) {
             bindings[0] = Binding.MOUSE_MOVE_UP;
@@ -124,6 +130,11 @@ public class ControlElement {
     public void setType(Type type) {
         this.type = type;
         reset();
+    }
+
+    public void setTypeNoReset(Type type) {
+        this.type = type;
+        boundingBoxNeedsUpdate = true;
     }
 
     public int getBindingCount() {

@@ -123,6 +123,7 @@ public class PresentExtension implements Extension {
         if (pixmap == null) throw new BadPixmap(pixmapId);
 
         Drawable content = window.getContent();
+
         if (content.visual.depth != pixmap.drawable.visual.depth) throw new BadMatch();
 
         long ust = System.nanoTime() / 1000;

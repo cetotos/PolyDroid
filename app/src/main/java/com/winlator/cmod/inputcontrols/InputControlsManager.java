@@ -63,7 +63,9 @@ public class InputControlsManager {
 
         int newVersion = AppUtils.getVersionCode(context);
         int oldVersion = preferences.getInt("inputcontrols_app_version", 0);
-        if (oldVersion == newVersion) return;
+        boolean profilesFixed = preferences.getBoolean("inputcontrols_profiles_fixed", false);
+        if (oldVersion == newVersion && profilesFixed) return;
+        preferences.edit().putBoolean("inputcontrols_profiles_fixed", true).apply();
         preferences.edit().putInt("inputcontrols_app_version", newVersion).apply();
 
         File[] files = profilesDir.listFiles();

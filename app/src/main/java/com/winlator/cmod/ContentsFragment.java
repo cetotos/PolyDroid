@@ -2,6 +2,7 @@ package com.winlator.cmod;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import androidx.fragment.app.FragmentActivity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.net.Uri;
@@ -85,7 +86,9 @@ public class ContentsFragment extends Fragment {
             String json = Downloader.downloadString(contentsURL);
             if (json == null)
                 return;
-            getActivity().runOnUiThread(() -> {
+            FragmentActivity activity = getActivity();
+            if (activity == null) return;
+            activity.runOnUiThread(() -> {
                 manager.setRemoteProfiles(json);
                 loadContentList();
             });
