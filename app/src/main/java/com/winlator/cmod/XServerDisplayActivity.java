@@ -1059,7 +1059,33 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
         String dxwrapper = this.dxwrapper;
 
         if (dxwrapper.contains("dxvk")) {
-            String dxvkWrapper = "dxvk-" + dxwrapperConfig.get("version");
+            // fallback to DXVK 1.10.3 if device is Vulkan 1.2 and below
+            String dxvkVersion = dxwrapperConfig.get("version");
+
+            try {
+                String deviceVkVersion = GPUInformation.getVulkanVersion(
+                        graphicsDriverConfig.get("version"), this);
+                String[] vkParts = deviceVkVersion.split("\\.");
+                int vkMajor = Integer.parseInt(vkParts[0]);
+                int vkMinor = vkParts.length > 1 ? Integer.parseInt(vkParts[1]) : 0;
+                if (vkMajor < 1 || (vkMajor == 1 && vkMinor < 3)) {
+                    String[] dxvkParts = dxvkVersion.split("\\.");
+                    int dxvkMajor = Integer.parseInt(dxvkParts[0]);
+                    if (dxvkMajor >= 2) {
+                        Log.w(TAG, "Vulkan " + deviceVkVersion + " < 1.3, DXVK 1.10.3 will be used");
+                        dxvkVersion = "1.10.3";
+                        dxwrapperConfig.put("version", dxvkVersion);
+                        showToast(this, "Your device uses Vulkan " + deviceVkVersion + ", DXVK 1.1 will be used. You may encounter graphical issues!");
+                    }
+                }
+            } catch (Exception e) {
+                Log.w(TAG, "Could not detect Vulkan version! Using DXVK to 1.10.3");
+                dxvkVersion = "1.10.3";
+                dxwrapperConfig.put("version", dxvkVersion);
+                showToast(this, "Could not detect Vulkan version, using DXVK 1.10.3");
+            }
+
+            String dxvkWrapper = "dxvk-" + dxvkVersion;
             String vkd3dWrapper = "vkd3d-" + dxwrapperConfig.get("vkd3dVersion");
             String ddrawrapper = dxwrapperConfig.get("ddrawrapper");
             dxwrapper = dxvkWrapper + ";" + vkd3dWrapper + ";" + ddrawrapper;
