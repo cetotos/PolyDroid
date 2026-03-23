@@ -1497,8 +1497,7 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
 
     private void simulateConfirmInputControlsDialog() {
 
-        boolean isShowTouchscreenControls = preferences.getBoolean("show_touchscreen_controls_enabled", true); // default is true (visible)
-        inputControlsView.setShowTouchscreenControls(isShowTouchscreenControls);
+        inputControlsView.setShowTouchscreenControls(true);
 
         boolean isTimeoutEnabled = preferences.getBoolean("touchscreen_timeout_enabled", false);
         boolean isHapticsEnabled = preferences.getBoolean("touchscreen_haptics_enabled", false);
