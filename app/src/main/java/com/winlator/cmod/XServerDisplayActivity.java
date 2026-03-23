@@ -1074,7 +1074,6 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
         String dxwrapper = this.dxwrapper;
 
         if (dxwrapper.contains("dxvk")) {
-            // fallback to DXVK 1.10.3 if device is Vulkan 1.2 and below
             String dxvkVersion = dxwrapperConfig.get("version");
 
             try {
@@ -1087,17 +1086,17 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
                     String[] dxvkParts = dxvkVersion.split("\\.");
                     int dxvkMajor = Integer.parseInt(dxvkParts[0]);
                     if (dxvkMajor >= 2) {
-                        Log.w(TAG, "Vulkan " + deviceVkVersion + " < 1.3, DXVK 1.10.3 will be used");
-                        dxvkVersion = "1.10.3";
+                        Log.w(TAG, "Vulkan " + deviceVkVersion + " < 1.3, DXVK-Sarek 1.11.1 will be used");
+                        dxvkVersion = "1.11.1-sarek";
                         dxwrapperConfig.put("version", dxvkVersion);
-                        showToast(this, "Your device uses Vulkan " + deviceVkVersion + ", DXVK 1.1 will be used. You may encounter graphical issues!");
+                        showToast(this, "Vulkan " + deviceVkVersion + " detected, using DXVK-Sarek for compatibility");
                     }
                 }
             } catch (Exception e) {
-                Log.w(TAG, "Could not detect Vulkan version! Using DXVK to 1.10.3");
-                dxvkVersion = "1.10.3";
+                Log.w(TAG, "Could not detect Vulkan version! Using DXVK-Sarek 1.11.1");
+                dxvkVersion = "1.11.1-sarek";
                 dxwrapperConfig.put("version", dxvkVersion);
-                showToast(this, "Could not detect Vulkan version, using DXVK 1.10.3");
+                showToast(this, "Could not detect Vulkan version, using DXVK-Sarek");
             }
 
             String dxvkWrapper = "dxvk-" + dxvkVersion;
