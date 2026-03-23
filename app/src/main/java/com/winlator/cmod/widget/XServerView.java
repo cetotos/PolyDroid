@@ -9,9 +9,13 @@ import android.widget.FrameLayout;
 import com.winlator.cmod.renderer.GLRenderer;
 import com.winlator.cmod.xserver.XServer;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 @SuppressLint("ViewConstructor")
 public class XServerView extends GLSurfaceView {
     private final GLRenderer renderer;
+    private final CountDownLatch surfaceReadyLatch = new CountDownLatch(1);
 
     public XServerView(Context context, XServer xServer) {
         super(context);
@@ -26,5 +30,17 @@ public class XServerView extends GLSurfaceView {
 
     public GLRenderer getRenderer() {
         return renderer;
+    }
+
+    public void signalSurfaceReady() {
+        surfaceReadyLatch.countDown();
+    }
+
+    public void waitForSurfaceReady() {
+        try {
+            surfaceReadyLatch.await(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }

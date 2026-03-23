@@ -517,6 +517,20 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
 
         boolean[] winStarted = {false};
 
+        // keep requesting renders during startup to prevent black screen
+
+        Handler renderKickstartHandler = new Handler(Looper.getMainLooper());
+        Runnable renderKickstartRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (!winStarted[0] && xServerView != null) {
+                    xServerView.requestRender();
+                    renderKickstartHandler.postDelayed(this, 100);
+                }
+            }
+        };
+        renderKickstartHandler.postDelayed(renderKickstartRunnable, 500);
+
         // Add the OnWindowModificationListener for dynamic workarounds
         xServer.windowManager.addOnWindowModificationListener(new WindowManager.OnWindowModificationListener() {
             @Override
@@ -525,6 +539,7 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
                     xServerView.getRenderer().setCursorVisible(true);
                     preloaderDialog.closeOnUiThread();
                     winStarted[0] = true;
+                    renderKickstartHandler.removeCallbacks(renderKickstartRunnable);
                 }
 
                 if (frameRatingWindowId == window.id) frameRating.update();
@@ -605,6 +620,7 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
                 setupWineSystemFiles();
                 extractGraphicsDriverFiles();
                 changeWineAudioDriver();
+                xServerView.waitForSurfaceReady();
                 try {
                     setupXEnvironment();
                 } catch (PackageManager.NameNotFoundException e) {
@@ -1055,7 +1071,6 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
             container.putExtra("imgVersion", imgVersion);
             containerDataChanged = true;
         }
-
         String dxwrapper = this.dxwrapper;
 
         if (dxwrapper.contains("dxvk")) {
@@ -1620,7 +1635,7 @@ public class XServerDisplayActivity extends AppCompatActivity implements Navigat
             TarCompressorUtils.extract(TarCompressorUtils.Type.ZSTD, this, "graphics_driver/extra_libs" + ".tzst", rootDir);
         }
 
-        if (adrenoToolsDriverId != "System") {
+        if (!"System".equals(adrenoToolsDriverId)) {
             AdrenotoolsManager adrenotoolsManager = new AdrenotoolsManager(this);
             adrenotoolsManager.setDriverById(envVars, imageFs, adrenoToolsDriverId);
         }
