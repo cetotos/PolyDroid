@@ -1,5 +1,5 @@
 <p align="center">
-	<img src="logo.png" width="376" height="128" alt="Winlator Logo" />  
+	<img src="logo.png" alt="PolyDroid Logo" />  
 </p>
 <sub>credits to @enderplaysvr on discord for logo</sub>
 
@@ -22,9 +22,13 @@ Since PolyDroid doesn't give you any cheats that give you advantages, it isn't b
 
 PolyDroid (and any Winlator that is older than 8.0) requires full file access for execution to work properly.
 It copies game data to /sdcard which is fully writable by any app, however this requires full file access.
-This is (probably) the same reason why Google Play protection flags this as dangerous
+This is (probably) the same reason why Google Play protection flags this as dangerous.
+
+
 Modern Winlator fixes this (8.0 and above) however it has some performance loss since it uses proot.
-But, honestly, DON'T install any apps you dont trust from the web! 
+
+
+But, honestly, DON'T install any apps you dont trust from the web! If I were you I would also be skeptical.. 
 
 
 ## Credits and Third-party apps
