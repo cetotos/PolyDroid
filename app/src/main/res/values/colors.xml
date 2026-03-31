@@ -2,16 +2,16 @@
 <resources>
     <!-- Light Theme Colors -->
     <color name="window_background_color">#fafafa</color>
-    <color name="colorPrimary">#607d8b</color>
-    <color name="colorPrimaryDark">#455a64</color>
-    <color name="colorAccent">#0288d1</color>
+    <color name="colorPrimary">#51b855</color>
+    <color name="colorPrimaryDark">#3b8a3e</color>
+    <color name="colorAccent">#72db77</color>
     <color name="black">#000000</color>
 
     <!-- Dark Theme Colors -->
     <color name="window_background_color_dark">#121212</color>
-    <color name="colorPrimaryDarkMode">#37474f</color>
-    <color name="colorPrimaryDarkModeDark">#263238</color>
-    <color name="colorAccentDark">#80d8ff</color>
+    <color name="colorPrimaryDarkMode">#225924</color>
+    <color name="colorPrimaryDarkModeDark">#113b12</color>
+    <color name="colorAccentDark">#a0f2a4</color>
     <color name="white">#ffffff</color>
 
     <!-- Additional Colors for Dark Mode -->
