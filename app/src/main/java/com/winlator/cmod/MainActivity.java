@@ -17,6 +17,7 @@ import android.text.Html;
 import android.text.SpannableString;
 import android.text.method.LinkMovementMethod;
 import android.text.style.ForegroundColorSpan;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
@@ -433,9 +434,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } else {
             execArgs = "-network client -token " + token;
         }
-        // force fullscreen (this is only if your phone is 19.5:9 lol)
-        execArgs += " -screen-fullscreen 1 -screen-width 2340 -screen-height 1080";
-        String screenSize = "2340x1080";
+        DisplayMetrics dm = getResources().getDisplayMetrics();
+        int nativeW = Math.max(dm.widthPixels, dm.heightPixels);
+        int nativeH = Math.min(dm.widthPixels, dm.heightPixels);
+        float scale = 720f / nativeH;
+        int screenHeight = 720;
+        int screenWidth = Math.round(nativeW * scale);
+        execArgs += " -screen-fullscreen 1 -screen-width " + screenWidth + " -screen-height " + screenHeight;
+        String screenSize = screenWidth + "x" + screenHeight;
 
         File cacheDir = getCacheDir();
         File desktopFile = new File(cacheDir, "polytoria_launch.desktop");
