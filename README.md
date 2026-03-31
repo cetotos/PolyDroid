@@ -1,7 +1,7 @@
 <p align="center">
 	<img src="logo.png" width="376" height="128" alt="Winlator Logo" />  
 </p>
-<sub>idk what to change this logo to</sub>
+<sub>credits to @enderplaysvr on discord for logo</sub>
 
 # PolyDroid
 
@@ -9,13 +9,22 @@ PolyDroid is an Android application that lets you to run the Windows version of 
 
 ## Installation
 
-1. Download and install the APK from[GitHub Releases](https://github.com/cetotos/PolyDroid/releases/latest)
-2. Launch the app, give permissions and wait for the installation process to finish
+1. Download and install the APK from [GitHub Releases](https://github.com/cetotos/PolyDroid/releases/latest)
+2. Launch the app, give permissions and wait for the installation process to finish (it will take a while, the game data and rootfs is ~4 GB)
 
-## Moderation concerns
+## FAQ
 
-Unlike PolytoriaVR, this won't get you banned as it doesn't have any blatant cheats like PolytoriaVR (flying, noclip, size changes etc.)
-However, the game still modifies the client for controller support, which shouldn't be an issue but I can't exactly confirm...
+### Is this against the Polytoria rules?
+
+Since PolyDroid doesn't give you any cheats that give you advantages, it isn't bannable.
+
+### Will you sell my data/Mine bitcoin from my phone; Is this a virus?
+
+PolyDroid (and any Winlator that is older than 8.0) requires full file access for execution to work properly.
+It copies game data to /sdcard which is fully writable by any app, however this requires full file access.
+This is (probably) the same reason why Google Play protection flags this as dangerous
+Modern Winlator fixes this (8.0 and above) however it has some performance loss since it uses proot.
+But, honestly, DON'T install any apps you dont trust from the web! 
 
 
 ## Credits and Third-party apps
@@ -31,6 +40,7 @@ However, the game still modifies the client for controller support, which should
 - D8VK ([github.com/AlpyneDreams/d8vk](https://github.com/AlpyneDreams/d8vk))
 - CNC DDraw ([github.com/FunkyFr3sh/cnc-ddraw](https://github.com/FunkyFr3sh/cnc-ddraw))
 - Polytoria-Controllers ([github.com/cetotos/Polytoria-Controllers](https://github.com/cetotos/Polytoria-Controllers))
+- DXVK Sarek ([github.com/pythonlover02/DXVK-Sarek](https://github.com/pythonlover02/DXVK-Sarek))
 
 Many thanks to [ptitSeb](https://github.com/ptitSeb) (Box86/Box64), [Danylo](https://blogs.igalia.com/dpiliaiev/tags/mesa/) (Turnip), [alexvorxx](https://github.com/alexvorxx) (Mods/Tips) and others.
 Thank you to all the people who believe in this project.
