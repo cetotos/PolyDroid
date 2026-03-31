@@ -1,5 +1,5 @@
 <p align="center">
-	<img src="logo.png" width="376" height="128" alt="Winlator Logo" />  
+	<img src="logo.png" alt="PolyDroid Logo" />  
 </p>
 <sub>credits to @enderplaysvr on discord for logo</sub>
 
