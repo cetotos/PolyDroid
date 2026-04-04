@@ -30,6 +30,14 @@ Modern Winlator fixes this (8.0 and above) however it has some performance loss 
 
 But, honestly, DON'T install any apps you dont trust from the web! If I were you I would also be skeptical.. 
 
+### Why won't it run/Why does it run very poorly?
+
+Since the Polytoria Client uses DirectX 11, DXVK is used. While modern DXVK is pretty good (2.x.x and above), it requires Vulkan 1.3 and above which not many devices have support for.
+
+If you see the DXVK Sarek message on the bottom when launching a game, or the top left says DXVK-Sarek is being used, you will experience poor performance and graphical glitches.
+
+PolyDroid 2 will attempt to fix this by using OpenGL+Zink instead, however it is not out yet.
+
 
 ## Credits and Third-party apps
 - Winlator-CMOD ([github.com/Stredohori/Winlator-CMOD](https://github.com/Stredohori/Winlator-CMOD))
