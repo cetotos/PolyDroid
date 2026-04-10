@@ -36,7 +36,13 @@ Since the Polytoria Client uses DirectX 11, DXVK is used. While modern DXVK is p
 
 If you see the DXVK Sarek message on the bottom when launching a game, or the top left says DXVK-Sarek is being used, you will experience poor performance and graphical glitches.
 
-PolyDroid 2 will attempt to fix this by using OpenGL+Zink instead, however it is not out yet.
+PolyDroid 2 will attempt to fix this by using Vulkan instead, however it is not out yet.
+
+### I can't login, it's stuck at cloudflare/I get ERR_NAME_NOT_RESOLVED
+
+This is usually a network issue or cloudflare issue which can't be fixed by me.
+
+ERR_NAME_NOT_RESOLVED is an Android WebView issue which I also can't fix sadly, however PolyDroid 2 should fix this as it just uses Chrome instead of WebView
 
 
 ## Credits and Third-party apps
@@ -45,11 +51,8 @@ PolyDroid 2 will attempt to fix this by using OpenGL+Zink instead, however it is
 - Ubuntu RootFs ([Focal Fossa](https://releases.ubuntu.com/focal))
 - Wine ([winehq.org](https://www.winehq.org/))
 - Box86/Box64 by [ptitseb](https://github.com/ptitSeb)
-- PRoot ([proot-me.github.io](https://proot-me.github.io))
-- Mesa (Turnip/Zink/VirGL) ([mesa3d.org](https://www.mesa3d.org))
+- Mesa (Turnip) ([mesa3d.org](https://www.mesa3d.org))
 - DXVK ([github.com/doitsujin/dxvk](https://github.com/doitsujin/dxvk))
-- VKD3D ([gitlab.winehq.org/wine/vkd3d](https://gitlab.winehq.org/wine/vkd3d))
-- D8VK ([github.com/AlpyneDreams/d8vk](https://github.com/AlpyneDreams/d8vk))
 - CNC DDraw ([github.com/FunkyFr3sh/cnc-ddraw](https://github.com/FunkyFr3sh/cnc-ddraw))
 - Polytoria-Controllers ([github.com/cetotos/Polytoria-Controllers](https://github.com/cetotos/Polytoria-Controllers))
 - DXVK Sarek ([github.com/pythonlover02/DXVK-Sarek](https://github.com/pythonlover02/DXVK-Sarek))
