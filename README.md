@@ -3,6 +3,8 @@
 </p>
 <sub>credits to @enderplaysvr on discord for logo</sub>
 
+# **WARNING: PolyDroid is discontinued! Updates and fixes are focused on PolyDroid 2 instead: https://github.com/cetotos/PolyDroid2**
+
 # PolyDroid
 
 PolyDroid is an Android application that lets you to run the Windows version of Polytoria on mobile based on Winlator-CMOD and FEXCore.
