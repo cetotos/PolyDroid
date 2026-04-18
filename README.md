@@ -1,9 +1,12 @@
+# **WARNING: PolyDroid is discontinued! Updates and fixes are focused on PolyDroid 2 instead: https://github.com/cetotos/PolyDroid2**
+
+
 <p align="center">
 	<img src="logo.png" alt="PolyDroid Logo" />  
 </p>
 <sub>credits to @enderplaysvr on discord for logo</sub>
 
-# **WARNING: PolyDroid is discontinued! Updates and fixes are focused on PolyDroid 2 instead: https://github.com/cetotos/PolyDroid2**
+
 
 # PolyDroid
 
